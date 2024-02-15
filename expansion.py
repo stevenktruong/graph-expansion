@@ -32,7 +32,7 @@ def standardize(t: Term):
             ):
                 rotate(g_loop)
         else:
-            while not isinstance(g_loop.product[-2], G):
+            while not isinstance(g_loop.product[0], G):
                 rotate(g_loop)
 
 
@@ -125,11 +125,6 @@ def expand_g_loop(x: Term):
     out: list[Term] = []
 
     target = x.g_loops[0]
-    target_i = -1
-    for k, y in enumerate(target.product):
-        if isinstance(y, G):
-            target_i = k
-            break
     alpha = (
         max(
             [f.alpha.i for t in x.traces for f in t.product if isinstance(f, E)],
@@ -142,37 +137,25 @@ def expand_g_loop(x: Term):
     if len([y for y in target.product if isinstance(y, G)]) != 2:
         out.append(
             N(x.n_exponent)
-            * Trace(target.product[:target_i], M(), target.product[target_i + 1 :])
+            * Trace(M(), target.product[1:])
             * x.light_weights
             * x.g_loops[1:]
         )
     else:
         i = -1
-        for k, y in enumerate(target.product[target_i + 1 :]):
+        for k, y in enumerate(target.product[1:]):
             if isinstance(y, G):
-                i = k + target_i + 1
+                i = k + 1
                 break
 
         out.extend(
             [
                 N(x.n_exponent)
-                * Trace(
-                    target.product[:target_i],
-                    M(),
-                    target.product[target_i + 1 : i],
-                    wtG(),
-                    target.product[i + 1 :],
-                )
+                * Trace(M(), target.product[1:i], wtG(), target.product[i + 1 :])
                 * x.light_weights
                 * x.g_loops[1:],
                 N(x.n_exponent)
-                * Trace(
-                    target.product[:target_i],
-                    M(),
-                    target.product[target_i + 1 : i],
-                    M(),
-                    target.product[i + 1 :],
-                )
+                * Trace(M(), target.product[1:i], M(), target.product[i + 1 :])
                 * x.light_weights
                 * x.g_loops[1:],
             ]
@@ -181,15 +164,7 @@ def expand_g_loop(x: Term):
     # <MGG f(H)> term
     out.append(
         N(x.n_exponent - 1)
-        * Trace(
-            target.product[:target_i],
-            M(),
-            E(alpha),
-            G(),
-            E(alpha),
-            G(),
-            target.product[target_i + 1 :],
-        )
+        * Trace(M(), E(alpha), G(), E(alpha), G(), target.product[1:])
         * x.light_weights
         * x.g_loops[1:]
     )
@@ -198,13 +173,7 @@ def expand_g_loop(x: Term):
     out.append(
         N(x.n_exponent)
         * Trace(wtG(), E(alpha))
-        * Trace(
-            target.product[:target_i],
-            M(),
-            E(alpha),
-            G(),
-            target.product[target_i + 1 :],
-        )
+        * Trace(M(), E(alpha), G(), target.product[1:])
         * x.light_weights
         * x.g_loops[1:]
     )
@@ -214,19 +183,16 @@ def expand_g_loop(x: Term):
         [
             N(x.n_exponent - 1)
             * Trace(
-                target.product[:target_i],
                 M(),
                 E(alpha),
-                transpose(deepcopy(target.product[target_i + 1 :][: k + 1])),
+                transpose(deepcopy(target.product[1:][: k + 1])),
                 G(),
                 E(alpha),
-                deepcopy(
-                    (target.product[:target_i] + target.product[target_i + 1 :])[k:]
-                ),
+                deepcopy(target.product[1:][k:]),
             )
             * x.light_weights
             * x.g_loops[1:]
-            for k, f in enumerate(target.product[target_i + 1 :])
+            for k, f in enumerate(target.product[1:])
             if isinstance(f, G)
         ]
     )
@@ -235,24 +201,11 @@ def expand_g_loop(x: Term):
     out.extend(
         [
             N(x.n_exponent)
-            * Trace(
-                target.product[:target_i],
-                M(),
-                E(alpha),
-                deepcopy((target.product[target_i + 1 :])[k:]),
-            )
-            * Trace(
-                deepcopy(
-                    (target.product[:target_i] + target.product[target_i + 1 :])[
-                        : k + 1
-                    ]
-                ),
-                E(alpha),
-                G(),
-            )
+            * Trace(M(), E(alpha), deepcopy(target.product[1:][k:]))
+            * Trace(deepcopy(target.product[1:][: k + 1]), E(alpha), G())
             * x.light_weights
             * x.g_loops[1:]
-            for k, f in enumerate(target.product[target_i + 1 :])
+            for k, f in enumerate(target.product[1:])
             if isinstance(f, G)
         ]
     )
@@ -261,15 +214,7 @@ def expand_g_loop(x: Term):
     out.extend(
         [
             N(x.n_exponent - 2)
-            * Trace(
-                M(),
-                E(alpha),
-                target.product[:target_i],
-                nderivative,
-                E(alpha),
-                G(),
-                target.product[target_i + 1 :],
-            )
+            * Trace(M(), E(alpha), nderivative, E(alpha), G(), target.product[1:])
             * x.light_weights[1:][:k]
             * x.light_weights[1:][k + 1 :]
             * x.g_loops[1:]
@@ -282,15 +227,7 @@ def expand_g_loop(x: Term):
     out.extend(
         [
             N(x.n_exponent - 2)
-            * Trace(
-                M(),
-                E(alpha),
-                target.product[:target_i],
-                nderivative,
-                E(alpha),
-                G(),
-                target.product[target_i + 1 :],
-            )
+            * Trace(M(), E(alpha), nderivative, E(alpha), G(), target.product[1:])
             * x.g_loops[1:][:k]
             * x.g_loops[1:][k + 1 :]
             * x.light_weights
@@ -308,7 +245,6 @@ def expand(t: Term):
     else:
         out = expand_g_loop(t)
 
-    # for x in out[0]:
-    #     standardize(x)
-
+    for x in out[0]:
+        standardize(x)
     return out
