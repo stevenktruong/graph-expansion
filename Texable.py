@@ -19,5 +19,17 @@ def tex(x: Texable) -> str:
     return x.__tex__()
 
 
-def render(x: Texable):
-    display(Latex(f"${macros + tex(x)}$"))
+def tex_with_macros(x: Texable) -> str:
+    return f"{macros} {tex(x)}"
+
+
+def render(*args):
+    latex = f"${macros} "
+    for x in args:
+        if isinstance(x, str):
+            latex += f" {x} "
+        elif isinstance(x, Texable):
+            latex += f" {tex(x)} "
+    latex += "$"
+
+    display(Latex(latex))

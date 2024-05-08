@@ -24,7 +24,12 @@ class Trace(Texable):
         if isinstance(other, Trace):
             return Graph(0, deepcopy(self), deepcopy(other))
         elif isinstance(other, Graph):
-            return Graph(other.n.exponent, deepcopy(self), deepcopy(other.traces))
+            return Graph(
+                other.n.exponent,
+                deepcopy(self),
+                deepcopy(other.traces),
+                deepcopy(other.coefficients),
+            )
         elif isinstance(other, N):
             return Graph(other.exponent, deepcopy(self))
         elif isinstance(other, Coefficient):
@@ -53,6 +58,7 @@ class Coefficient(Texable):
     pass
 
 
+# TODO: Move ImF class?
 class ImF(Coefficient):
     a: int
     alpha: Alpha
@@ -131,6 +137,15 @@ class Graph(Texable):
             if n_wtG == 0 and n_G == 0:
                 self.deterministics.append(t)
             elif n_wtG == 0 and n_G > 1:
+                for _ in range(len(t.factors)):
+                    first = t.factors[0]
+                    if isinstance(first, G):
+                        last = t.factors[last_G_index(t)]
+                        if not first.transposed and (
+                            first.conjugated == last.conjugated
+                        ):
+                            break
+                    t.factors = t.factors[1:] + t.factors[:1]
                 self.g_loops.append(t)
             elif n_wtG == 1 and n_G == 0:
                 self.light_weights.append(t)
@@ -138,6 +153,8 @@ class Graph(Texable):
                 self.others.append(t)
                 # render(t)
                 # raise TypeError("Trace is not deterministic, light-weight, or G-loop")
+
+        self.g_loops.sort(key=lambda t: len([f for f in t.factors if isinstance(f, G)]))
 
     def __mul__(self, other):
         if isinstance(other, Trace):
@@ -149,7 +166,7 @@ class Graph(Texable):
             )
         elif isinstance(other, Graph):
             return Graph(
-                self.n.exponent,
+                self.n.exponent + other.n.exponent,
                 deepcopy(self.traces),
                 deepcopy(self.coefficients),
                 deepcopy(other.traces),
@@ -182,6 +199,70 @@ class Graph(Texable):
             return deterministic_string + non_deterministic_string
 
 
+class Size(Texable):
+    n_exponent: float
+    eta_exponent: float
+
+    def __init__(self, n_exponent: float, eta_exponent: float):
+        self.n_exponent = n_exponent
+        self.eta_exponent = eta_exponent
+
+    def __tex__(self):
+        if self.n_exponent == 0 and self.eta_exponent == 0:
+            return "1"
+
+        if self.n_exponent == 0:
+            n_string = ""
+        elif self.n_exponent == 1:
+            n_string = "N"
+        else:
+            n_string = f"N^{{{self.n_exponent}}}"
+
+        if self.eta_exponent == 0:
+            eta_string = ""
+        elif self.eta_exponent == 1:
+            eta_string = "\\eta"
+        else:
+            eta_string = f"\\eta^{{{self.eta_exponent}}}"
+
+        return n_string + eta_string
+
+    def __lt__(self, other):
+        if isinstance(other, Size):
+            return (self.n_exponent, -self.eta_exponent) < (
+                other.n_exponent,
+                -other.eta_exponent,
+            )
+        else:
+            raise TypeError("Tried to compare Size with non-Size object")
+
+    def __eq__(self, other):
+        if isinstance(other, Size):
+            return (self.n_exponent, self.eta_exponent) == (
+                other.n_exponent,
+                other.eta_exponent,
+            )
+        else:
+            raise TypeError("Tried to compare Size with non-Size object")
+
+    def __truediv__(self, other):
+        if isinstance(other, Size):
+            return Size(
+                self.n_exponent - other.n_exponent,
+                self.eta_exponent - other.eta_exponent,
+            )
+        else:
+            raise TypeError("Tried to divide Size by non-Size object")
+
+
+def last_G_index(t: Trace) -> int:
+    i = -1
+    for j, f in enumerate(t.factors):
+        if isinstance(f, G) or isinstance(f, wtG):
+            i = j
+    return i
+
+
 def p(x: Graph) -> int:
     return -x.n.exponent
 
@@ -196,3 +277,17 @@ def r(x: Graph) -> int:
 
 def k(t: Trace) -> int:
     return len([f for f in t.factors if isinstance(f, G)])
+
+
+def n(x: Graph) -> int:
+    return sum([k(t) for t in x.g_loops])
+
+
+def size(x: Graph) -> Size:
+    return Size(
+        -(p(x) + q(x)),
+        r(x)
+        - q(x)
+        - n(x)
+        - len([c for c in x.coefficients if isinstance(c, ImF) and c.a == 1]),
+    )

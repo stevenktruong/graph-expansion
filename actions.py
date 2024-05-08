@@ -6,7 +6,11 @@ from helpers import transpose
 
 def Xf(x: Graph, i: int) -> tuple[list[MatrixFactor], Graph]:
     t = deepcopy(x.traces[i])
-    f = Graph(x.n.exponent, deepcopy(x.traces[:i]) + deepcopy(x.traces[i + 1 :]))
+    f = Graph(
+        x.n.exponent,
+        deepcopy(x.traces[:i]) + deepcopy(x.traces[i + 1 :]),
+        deepcopy(x.coefficients),
+    )
     return (t.factors[1:], f)
 
 
@@ -17,7 +21,7 @@ def ND(x: Trace) -> list[list[MatrixFactor]]:
         if isinstance(f, G) or isinstance(f, wtG):
             product = (
                 [G(like=f)]
-                + deepcopy(x.factors[i - 1 :])
+                + deepcopy(x.factors[i + 1 :])
                 + deepcopy(x.factors[:i])
                 + [G(like=f)]
             )

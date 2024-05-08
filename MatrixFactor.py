@@ -44,45 +44,120 @@ class Alpha(Texable):
 
 
 class G(MatrixFactor):
+    subscript: str | None
+
+    def __init__(
+        self,
+        subscript: str | None = None,
+        conjugated: bool = False,
+        transposed: bool = False,
+        like=None,
+    ):
+        super().__init__(conjugated, transposed, like)
+        self.subscript = None
+        if (
+            isinstance(like, G) or isinstance(like, wtG) or isinstance(like, M)
+        ) and like.subscript:
+            self.subscript = like.subscript
+        if subscript:
+            self.subscript = subscript
+
     def __tex__(self):
-        if self.conjugated and self.transposed:
-            return "G^*"
-        elif self.conjugated:
-            return "\\conj{G}"
-        elif self.transposed:
-            return "G^\\top"
+        if self.subscript and len(self.subscript) == 1:
+            subscript_string = f"_{self.subscript}"
+        elif self.subscript and len(self.subscript) > 1:
+            subscript_string = f"_{{{self.subscript}}}"
         else:
-            return "G"
+            subscript_string = ""
+
+        if self.conjugated and self.transposed:
+            return f"G{subscript_string}^*"
+        elif self.conjugated:
+            return f"\\conj{{G{subscript_string}}}"
+        elif self.transposed:
+            return f"G{subscript_string}^\\top"
+        else:
+            return f"G{subscript_string}"
 
     def is_deterministic(self):
         return False
 
 
 class wtG(MatrixFactor):
+    subscript: str | None
+
+    def __init__(
+        self,
+        subscript: str | None = None,
+        conjugated: bool = False,
+        transposed: bool = False,
+        like=None,
+    ):
+        super().__init__(conjugated, transposed, like)
+        self.subscript = None
+        if (
+            isinstance(like, G) or isinstance(like, wtG) or isinstance(like, M)
+        ) and like.subscript:
+            self.subscript = like.subscript
+        if subscript:
+            self.subscript = subscript
+
     def __tex__(self):
-        if self.conjugated and self.transposed:
-            return "\\G^*"
-        elif self.conjugated:
-            return "\\conj{\\G}"
-        elif self.transposed:
-            return "\\G^\\top"
+        if self.subscript and len(self.subscript) == 1:
+            subscript_string = f"_{self.subscript}"
+        elif self.subscript and len(self.subscript) > 1:
+            subscript_string = f"_{{{self.subscript}}}"
         else:
-            return "\\G"
+            subscript_string = ""
+
+        if self.conjugated and self.transposed:
+            return f"\\G{subscript_string}^*"
+        elif self.conjugated:
+            return f"\\conj{{\\G{subscript_string}}}"
+        elif self.transposed:
+            return f"\\G{subscript_string}^\\top"
+        else:
+            return f"\\G{subscript_string}"
 
     def is_deterministic(self):
         return False
 
 
 class M(MatrixFactor):
+    subscript: str | None
+
+    def __init__(
+        self,
+        subscript: str | None = None,
+        conjugated: bool = False,
+        transposed: bool = False,
+        like=None,
+    ):
+        super().__init__(conjugated, transposed, like)
+        self.subscript = None
+        if (
+            isinstance(like, G) or isinstance(like, wtG) or isinstance(like, M)
+        ) and like.subscript:
+            self.subscript = like.subscript
+        if subscript:
+            self.subscript = subscript
+
     def __tex__(self):
-        if self.conjugated and self.transposed:
-            return "M^*"
-        elif self.conjugated:
-            return "\\conj{M}"
-        elif self.transposed:
-            return "M^\\top"
+        if self.subscript and len(self.subscript) == 1:
+            subscript_string = f"_{self.subscript}"
+        elif self.subscript and len(self.subscript) > 1:
+            subscript_string = f"_{{{self.subscript}}}"
         else:
-            return "M"
+            subscript_string = ""
+
+        if self.conjugated and self.transposed:
+            return f"M{subscript_string}^*"
+        elif self.conjugated:
+            return f"\\conj{{M{subscript_string}}}"
+        elif self.transposed:
+            return f"M{subscript_string}^\\top"
+        else:
+            return f"M{subscript_string}"
 
     def is_deterministic(self):
         return True
@@ -148,12 +223,33 @@ class B(MatrixFactor):
         return True
 
 
-class DeltaKL(MatrixFactor):
+class Delta(MatrixFactor):
+    k: str
+    l: str
+
+    def __init__(
+        self,
+        k: str = "",
+        l: str = "",
+        conjugated: bool = False,
+        transposed: bool = False,
+        like=None,
+    ):
+        super().__init__(conjugated, transposed, like)
+        self.k = k
+        self.l = l
+
     def __tex__(self):
-        if self.transposed:
-            return "\\Delta^{\\ell k}"
-        else:
-            return "\\Delta^{k\\ell}"
+        superscript_string = ""
+        if self.k and self.l:
+            superscript_string = (
+                f"^{{{self.k} {self.l}}}"
+                if not self.transposed
+                else f"^{{{self.l} {self.k}}}"
+            )
+        elif self.transposed:
+            superscript_string = "^{\\top}"
+        return f"\\Delta{superscript_string}"
 
     def is_deterministic(self):
         return True

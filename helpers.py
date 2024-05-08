@@ -2,7 +2,7 @@ from typing import TypeVar
 from copy import deepcopy
 
 from Graph import Coefficient, Graph, Trace
-from MatrixFactor import MatrixFactor
+from MatrixFactor import G, MatrixFactor, wtG
 
 
 T = TypeVar(
