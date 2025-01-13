@@ -1,3 +1,4 @@
 text.usetex: True
 font.family: serif
 font.serif: cm
+mathtext.fontset: cm
