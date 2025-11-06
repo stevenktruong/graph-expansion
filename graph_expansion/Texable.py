@@ -1,12 +1,12 @@
 from IPython.display import Latex, display
 
-macros = """
-\\gdef\\avg#1{\\mathopen{}\\left\\langle #1 \\right\\rangle\\mathclose{}}
-\\gdef\\p#1{\\mathopen{}\\left\\lparen #1 \\right\\rparen\\mathclose{}}
-\\gdef\\conj#1{\\overline{#1}}
-\\gdef\\G{\\widetilde{G}}
-\\gdef\\M{\\mathcal{M}}
-\\gdef\\E{\\mathbb{E}}
+macros = R"""
+\gdef\avg#1{\mathopen{}\left\langle #1 \right\rangle\mathclose{}}
+\gdef\p#1{\mathopen{}\left\lparen #1 \right\rparen\mathclose{}}
+\gdef\conj#1{\overline{#1}}
+\gdef\G{\widetilde{G}}
+\gdef\M{\mathcal{M}}
+\gdef\E{\mathbb{E}}
 """
 
 
@@ -26,7 +26,7 @@ def tex_with_macros(x: Texable) -> str:
 def _get_latex(args) -> str:
     if isinstance(args, str):
         return f" {args} "
-    elif isinstance(args, int):
+    elif isinstance(args, int | float):
         return f" {args} "
     elif isinstance(args, list | tuple):
         return " ".join([_get_latex(x) for x in args])
@@ -36,6 +36,6 @@ def _get_latex(args) -> str:
         raise TypeError(f"Could not generate LaTeX from {args.__class__}")
 
 
-def render(*args):
-    latex = f"${macros} {_get_latex(args)}$"
+def render(*args, huge=False):
+    latex = Rf"${R'\huge ' if huge else ''}{macros} {_get_latex(args)}$"
     display(Latex(latex))

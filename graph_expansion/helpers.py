@@ -1,9 +1,9 @@
 from copy import deepcopy
 from typing import TypeVar
 
-from .Coefficient import Coefficient, S, Theta
+from .Coefficient import Coefficient, S, Theta, calM
 from .Graph import Graph, Size, Trace
-from .MatrixFactor import G, MatrixFactor
+from .MatrixFactor import E, G, M, MatrixFactor
 
 T = TypeVar("T", MatrixFactor, list[MatrixFactor])
 

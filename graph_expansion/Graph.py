@@ -75,6 +75,7 @@ class Graph(Texable):
 
         def _parse_inputs(args):
             if isinstance(args, Trace):
+                # traces.extend(reduce_loop(args))
                 traces.append(args)
             elif isinstance(args, Coefficient):
                 coefficients.append(args)
@@ -94,12 +95,16 @@ class Graph(Texable):
             n_G = len([f for f in t if isinstance(f, G)])
 
             if n_wtG == 0 and n_G == 0:
+                # Replace <ME_a ME_b> with \calM_{ab}
                 if len(t) == 4:
                     M_1, M_2 = t[0], t[2]
                     E_1, E_2 = t[1], t[3]
                     assert isinstance(M_1, M) and isinstance(M_2, M)
                     assert isinstance(E_1, E) and isinstance(E_2, E)
-                    coefficients.append(calM(M_1.charge, M_2.charge, E_1.i, E_2.i))
+                    next_calM = calM(M_1.charge, M_2.charge, E_1.i, E_2.i)
+                    if isinstance(next_calM.j, a):
+                        next_calM = next_calM.transpose()
+                    coefficients.append(next_calM)
                     traces_to_remove.append(t)
                 else:
                     deterministics.append(t)
@@ -124,7 +129,7 @@ class Graph(Texable):
         )
         coefficients.sort(
             key=lambda c: (
-                min([c.i, c.j]) if isinstance(c, Theta | STheta) else Symbol("")
+                min([c.i, c.j])  # if isinstance(c, Theta | STheta) else Symbol("")
             )
         )
         g_loops.sort(key=lambda t: len([f for f in t if isinstance(f, G)]))
@@ -287,3 +292,53 @@ def best_G_index(t: Trace) -> int:
             if isinstance(t[(i + 2) % n_factors], M):
                 scores[i][2] = 1
     return max(range(len(scores)), key=scores.__getitem__)
+
+
+def reduce_loop(t: Trace) -> list[Trace]:
+    # E.g., <GE_a GE_b GE_a> = <GE_a GE_b> <GE_a>
+    def _helper(T: list[Trace]):
+        out: list[Trace] = []
+        for t0 in T:
+            seen_indices: dict[Symbol, int] = {}
+            for i, f in enumerate(t0):
+                if not isinstance(f, E):
+                    continue
+
+                if f.i not in seen_indices:
+                    seen_indices[f.i] = i
+                    continue
+
+                j = seen_indices[f.i]
+                out.extend(
+                    [
+                        Trace(t0[j + 1 : i + 1]),
+                        Trace(t0[i + 1 :] + t0[: j + 1]),
+                    ]
+                )
+                break
+            else:
+                out.append(t0)
+        return out
+
+    pre_out: list[Trace] = [t]
+    while True:
+        next_pre_out = _helper(pre_out)
+        if len(next_pre_out) == len(pre_out):
+            break
+        pre_out = next_pre_out
+
+    out: list[Trace] = []
+    for t in pre_out:
+        n_G = len([f for f in t if isinstance(f, G)])
+        if n_G != 1:
+            out.append(t)
+        else:
+            i = last_G_index(t)
+            target_G = t[i]
+            out.extend(
+                [
+                    Trace(t[:i], wtG(like=target_G), t[i + 1 :]),
+                    Trace(t[:i], M(like=target_G), t[i + 1 :]),
+                ]
+            )
+    return out

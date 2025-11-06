@@ -75,5 +75,31 @@ class b(NumberedSymbol):
 
 
 class d(Symbol):
+    _i: int
+    _j: int
+
     def __init__(self, i: int, j: int):
+        self._i = i
+        self._j = j
         super().__init__(f"d_{{{i},{j}}}")
+
+    def __repr__(self):
+        return self.__tex__()
+
+    @property
+    def i(self):
+        return self._i
+
+    @property
+    def j(self):
+        return self._j
+
+
+class e(NumberedSymbol):
+    def __init__(self, i: int):
+        super().__init__("e", i)
+
+
+class m(NumberedSymbol):
+    def __init__(self, i: int):
+        super().__init__("m", i)
